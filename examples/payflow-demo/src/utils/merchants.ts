@@ -40,18 +40,43 @@ export async function listMerchants(): Promise<MerchantInfo[]> {
 
     for (const subOrgId of subOrgIds) {
       try {
-        // Get sub-org details (we'll need to query wallets to get the name)
+        // Get sub-org details
         const subOrgClient = getTurnkeyClientForSubOrg(subOrgId);
         
-        // Get all wallets in this sub-org
+        // Get all wallets in this sub-org first (we need this for name detection and processing)
         const walletsResponse = await subOrgClient.apiClient().getWallets({
           organizationId: subOrgId,
         });
 
         const wallets = walletsResponse.wallets || [];
         
-        // Try to get sub-org name from first wallet name or use sub-org ID
-        const subOrgName = wallets[0]?.walletName?.replace(" Wallet", "") || subOrgId.slice(0, 8) + "...";
+        // Try to get the actual organization name from Turnkey API
+        let subOrgName: string | null = null;
+        try {
+          const orgResponse = await subOrgClient.apiClient().getOrganization({
+            organizationId: subOrgId,
+          });
+          // The organization name should be in the response
+          subOrgName = (orgResponse.organization as any)?.organizationName || 
+                       (orgResponse.organization as any)?.name || 
+                       null;
+        } catch (err: any) {
+          // If getOrganization fails, fall through to wallet-based name detection
+        }
+        
+        // If we couldn't get the name from getOrganization, try to derive it from wallets
+        if (!subOrgName) {
+          // Try to find the original wallet (the one that matches "{name} Wallet" pattern)
+          // This is typically the first wallet created with the merchant
+          // Look for wallet names that end with " Wallet" - the original wallet follows this pattern
+          const originalWallet = wallets.find(w => 
+            w.walletName && w.walletName.endsWith(" Wallet")
+          ) || wallets[0];
+          
+          // Derive name from original wallet or use sub-org ID
+          subOrgName = originalWallet?.walletName?.replace(" Wallet", "") || 
+                       subOrgId.slice(0, 8) + "...";
+        }
 
         // Get addresses for each wallet by fetching wallet accounts
         const merchantWallets = await Promise.all(
@@ -127,6 +152,19 @@ export async function getMerchantDetails(subOrganizationId: string): Promise<Mer
   const subOrgClient = getTurnkeyClientForSubOrg(subOrganizationId);
 
   try {
+    // Try to get the actual organization name from Turnkey API
+    let subOrgName: string;
+    try {
+      const orgResponse = await subOrgClient.apiClient().getOrganization({
+        organizationId: subOrganizationId,
+      });
+      subOrgName = (orgResponse.organization as any)?.organizationName || 
+                   (orgResponse.organization as any)?.name || 
+                   null;
+    } catch (err: any) {
+      subOrgName = null as any;
+    }
+    
     // Get all wallets in this sub-org
     const walletsResponse = await subOrgClient.apiClient().getWallets({
       organizationId: subOrganizationId,
@@ -134,7 +172,16 @@ export async function getMerchantDetails(subOrganizationId: string): Promise<Mer
 
     const wallets = walletsResponse.wallets || [];
     
-    const subOrgName = wallets[0]?.walletName?.replace(" Wallet", "") || subOrganizationId.slice(0, 8) + "...";
+    // If we couldn't get the name from getOrganization, derive it from wallets
+    if (!subOrgName) {
+      // Try to find the original wallet (the one that matches "{name} Wallet" pattern)
+      const originalWallet = wallets.find(w => 
+        w.walletName && w.walletName.endsWith(" Wallet")
+      ) || wallets[0];
+      
+      subOrgName = originalWallet?.walletName?.replace(" Wallet", "") || 
+                   subOrganizationId.slice(0, 8) + "...";
+    }
 
     // Get addresses for each wallet by fetching wallet accounts
     const merchantWallets = await Promise.all(

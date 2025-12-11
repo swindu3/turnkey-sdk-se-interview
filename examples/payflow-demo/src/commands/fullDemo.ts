@@ -97,7 +97,7 @@ export async function runFullDemo(): Promise<void> {
       success(`Policy Name: ${policyName}`);
       success(`Policy ID: ${policyId}`);
       console.log(chalk.gray(`   Restriction: USDC transfers only → ${formatAddress(treasury.address)}`));
-      console.log(chalk.gray(`   Threshold: Minimum ${sweepThresholdUSDC} USDC (enforced at policy level)`));
+      console.log(chalk.gray(`   Threshold: Minimum ${sweepThresholdUSDC} USDC (enforced at application level)`));
       console.log();
     } catch (err: any) {
       spinner.fail(`Failed to create policy: ${err.message}`);

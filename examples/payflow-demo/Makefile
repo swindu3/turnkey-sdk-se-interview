@@ -47,12 +47,17 @@ test: ## Run tests (if any)
 	@echo "No tests configured yet"
 
 setup: install ## Setup the project (install dependencies)
+	@echo "Installing dependencies..."
+	@echo "Note: You may need to run 'pnpm run build-all' from the workspace root"
+	@echo "      to build workspace packages before running the demo."
+	@echo ""
 	@echo "Setup complete!"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Copy .env.local.example to .env.local (if it exists)"
-	@echo "  2. Configure your environment variables in .env.local"
-	@echo "  3. Run 'make demo' to start the interactive CLI"
+	@echo "  1. From workspace root, run: pnpm run build-all (if not already done)"
+	@echo "  2. Copy .env.local.example to .env.local (if it exists)"
+	@echo "  3. Configure your environment variables in .env.local"
+	@echo "  4. Run 'make demo' to start the interactive CLI"
 
 check-env: ## Check if required environment variables are set
 	@echo "Checking environment variables..."

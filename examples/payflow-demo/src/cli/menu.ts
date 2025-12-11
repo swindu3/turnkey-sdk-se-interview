@@ -8,28 +8,40 @@ export type MenuAction =
   | "add-merchant-wallet"
   | "delete-merchant"
   | "sweep-funds"
+  | "scheduled-sweep"
+  | "send-funds"
   | "check-balance"
   | "exit";
 
+const MENU_CHOICES = [
+  { title: "1. Run Full Demo", value: "full-demo" },
+  { title: "2. Create New Merchant", value: "create-merchant" },
+  { title: "3. List All Merchants", value: "list-merchants" },
+  { title: "4. Add Wallet to Merchant", value: "add-merchant-wallet" },
+  { title: "5. Delete Merchant", value: "delete-merchant" },
+  { title: "6. Sweep Funds to Treasury", value: "sweep-funds" },
+  { title: "7. Scheduled Sweep Job", value: "scheduled-sweep" },
+  { title: "8. Send Funds to Merchant", value: "send-funds" },
+  { title: "9. Check Wallet Balance", value: "check-balance" },
+  { title: "10. Exit", value: "exit" },
+];
+
 /**
  * Shows the main menu and returns the selected action
- * Menu items are selectable by typing their number (1-8)
+ * Menu items are selectable using arrow keys
  */
 export async function showMainMenu(): Promise<MenuAction | null> {
   const { action } = await prompts({
     type: "select",
     name: "action",
-    message: "What would you like to do? (Type number or use arrow keys)",
-    choices: [
-      { title: "1. Run Full Demo", value: "full-demo" },
-      { title: "2. Create New Merchant", value: "create-merchant" },
-      { title: "3. List All Merchants", value: "list-merchants" },
-      { title: "4. Add Wallet to Merchant", value: "add-merchant-wallet" },
-      { title: "5. Delete Merchant", value: "delete-merchant" },
-      { title: "6. Sweep Funds to Treasury", value: "sweep-funds" },
-      { title: "7. Check Wallet Balance", value: "check-balance" },
-      { title: "8. Exit", value: "exit" },
-    ],
+    message: "What would you like to do? (Use arrow keys to navigate)",
+    choices: MENU_CHOICES,
+    onState: (state) => {
+      if (state.aborted) {
+        process.stdout.write('\n');
+        process.exit(1);
+      }
+    },
   });
 
   return action || null;

@@ -9,6 +9,16 @@ Payflow needs to:
 2. Automatically sweep incoming USDC deposits into a single treasury (omnibus) wallet
 3. Restrict fund movement by enforcing policies that only allow USDC transfers to the treasury wallet
 
+## Quick Navigation
+
+- **[Quick Start Guide](docs/01-quickstart.md)** - Get up and running in minutes
+- **[Turnkey Hierarchy](docs/02-turnkey-hierarchy.md)** - Understand the organizational structure
+- **[Sub-Organizations](docs/03-sub-organizations.md)** - Learn about merchant isolation
+- **[Policies](docs/04-policies.md)** - How transaction restrictions work
+- **[Fund Sweeping](docs/05-fund-sweeping.md)** - Automated USDC transfer mechanism
+- **[Scheduled Sweep Jobs](docs/07-scheduled-sweep.md)** - Long-running automated sweep jobs
+- **[CLI Usage](docs/06-cli-usage.md)** - Interactive command-line interface guide
+
 ## Architecture
 
 This demo uses the following Turnkey primitives:
@@ -26,126 +36,103 @@ This demo uses the following Turnkey primitives:
 
 ## Getting Started
 
+See the [Quick Start Guide](docs/01-quickstart.md) for detailed setup instructions.
+
 ### Prerequisites
 
 - Node.js v18+ installed
 - A Turnkey organization with API credentials
 - `pnpm` package manager (install via `corepack enable`)
+- Infura API key for Ethereum RPC access
 
-### 1. Clone and Setup
+### Quick Setup
 
 ```bash
-# If you haven't already cloned the SDK
-$ git clone https://github.com/tkhq/sdk
-$ cd sdk/
-
 # Install dependencies
 $ corepack enable
 $ pnpm install -r
+
+# Build all workspace packages (REQUIRED)
+# This builds @turnkey/sdk-server and other dependencies needed by the demo
 $ pnpm run build-all
 
 # Navigate to the demo
 $ cd examples/payflow-demo/
-```
 
-### 2. Configure Environment Variables
+# Configure environment variables (see .env.local.example)
+$ cp .env.local.example .env.local
+# Edit .env.local with your credentials
 
-Create a `.env.local` file in the `payflow-demo` directory:
-
-```bash
-# Turnkey API Credentials (required)
-API_PUBLIC_KEY=your_api_public_key
-API_PRIVATE_KEY=your_api_private_key
-ORGANIZATION_ID=your_organization_id
-BASE_URL=https://api.turnkey.com
-
-# Treasury wallet (optional - will create new if not set)
-TREASURY_WALLET_ADDRESS=
-
-# Network configuration
-NETWORK=sepolia  # or "goerli" for Goerli testnet
-
-# USDC token address (optional - defaults based on network)
-USDC_TOKEN_ADDRESS=0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
-
-# Sweep threshold (optional - default: 0.03 USDC)
-# Minimum USDC amount required in merchant wallets before a sweep is allowed
-# This threshold is enforced at the Turnkey policy level
-SWEEP_THRESHOLD_USDC=0.03
-
-# Infura API key (REQUIRED - get your key at https://www.infura.io/)
-INFURA_KEY=your_infura_api_key_here
-```
-
-**Getting Turnkey Credentials:**
-
-1. Sign up at [https://app.turnkey.com](https://app.turnkey.com)
-2. Create an organization
-3. Generate API keys in the dashboard
-4. Copy your `API_PUBLIC_KEY`, `API_PRIVATE_KEY`, and `ORGANIZATION_ID`
-
-### 3. Run the Demo
-
-```bash
+# Run the interactive CLI
 $ pnpm demo
 ```
 
-The demo will:
-1. ✅ Create or retrieve a treasury wallet
-2. ✅ Create a merchant sub-organization with a deposit wallet
-3. ✅ Create a restrictive policy (USDC-only → treasury)
-4. ✅ Attempt to sweep any USDC balance from merchant to treasury
+**Important**: The `pnpm run build-all` step is required before running the demo. This builds all workspace packages including `@turnkey/sdk-server`, which the demo depends on. Without this step, you'll see an error like `Cannot find module '@turnkey/sdk-server/dist/index.js'`.
 
-### Expected Output
+## Project Structure
 
 ```
-🚀 Payflow Demo - Automated Merchant Wallet & Fund Sweeping
-
-📡 Network: sepolia
-🪙 USDC Token: 0x1c7D...
-
-============================================================
-STEP 1: Setting up Treasury Wallet
-============================================================
-📦 Created new treasury wallet: 0x1234...5678
-✅ Treasury Address: 0x1234...5678
-
-============================================================
-STEP 2: Creating Merchant Sub-Organization & Wallet
-============================================================
-✅ Sub-Organization ID: abc123...
-✅ Wallet ID: def456...
-✅ Merchant Address: 0xabcd...ef01
-
-============================================================
-STEP 3: Creating Restricted Policy
-============================================================
-✅ Policy Created: USDC-Only Policy for 0xabcd...ef01
-   Policy ID: policy_xyz789...
-   Restriction: USDC transfers only → 0x1234...5678
-
-============================================================
-STEP 4: Sweeping USDC to Treasury
-============================================================
-📊 Merchant wallet 0xabcd...ef01 has 0 USDC
-⚠️  Sweep skipped: No USDC balance to sweep
-   Note: To test the sweep, send some USDC to 0xabcd...ef01
-   You can get testnet USDC from: https://faucet.circle.com/
-
-============================================================
-📋 DEMO SUMMARY
-============================================================
-Treasury Wallet:     0x1234...5678
-Merchant Sub-Org:     abc123...
-Merchant Wallet:      0xabcd...ef01
-Merchant Wallet ID:   def456...
-Policy ID:            policy_xyz789...
-Policy Restriction:   USDC-only → 0x1234...5678
-Sweep Status:         ⏸️  No USDC balance to sweep
-============================================================
-
-✨ Demo completed successfully!
+payflow-demo/
+├── src/
+│   ├── index.ts              # Main CLI entry point
+│   ├── createMerchant.ts     # Merchant sub-org & wallet creation
+│   ├── createPolicy.ts       # Policy creation for USDC restrictions
+│   ├── sweepUSDC.ts          # USDC transfer to treasury
+│   ├── treasury.ts           # Treasury wallet management
+│   ├── provider.ts            # Ethereum provider & Turnkey client setup
+│   ├── utils.ts               # Utility functions
+│   ├── commands/              # CLI command implementations
+│   │   ├── fullDemo.ts
+│   │   ├── createMerchant.ts
+│   │   ├── listMerchants.ts
+│   │   ├── addMerchantWallet.ts
+│   │   ├── deleteMerchant.ts
+│   │   ├── sweepFunds.ts
+│   │   ├── scheduledSweep.ts
+│   │   ├── sendFunds.ts
+│   │   └── checkBalance.ts
+│   └── cli/                   # CLI UI components
+│       ├── menu.ts
+│       ├── display.ts
+│       └── balance.ts
+├── docs/                      # Documentation
+│   ├── 01-quickstart.md
+│   ├── 02-turnkey-hierarchy.md
+│   ├── 03-sub-organizations.md
+│   ├── 04-policies.md
+│   ├── 05-fund-sweeping.md
+│   ├── 06-cli-usage.md
+│   └── 07-scheduled-sweep.md
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
+
+## Key Concepts
+
+### Sub-Organizations
+Each merchant gets their own isolated sub-organization, providing:
+- **Security isolation**: Merchant wallets are completely separate
+- **Access control**: Independent user management per merchant
+- **Policy scoping**: Policies apply only to their sub-organization
+
+Learn more: [Sub-Organizations Guide](docs/03-sub-organizations.md)
+
+### Policy Engine
+Turnkey's policy engine enforces transaction restrictions at the infrastructure level:
+- **USDC-only**: Only transactions to the USDC token contract are allowed
+- **Treasury-only**: Transfers must go to the treasury wallet address
+- **Calldata parsing**: Policy validates transaction data to ensure correct destination
+
+Learn more: [Policies Guide](docs/04-policies.md)
+
+### Fund Sweeping
+Automated mechanism to transfer USDC from merchant wallets to treasury:
+- **Threshold enforcement**: Minimum balance required before sweeping
+- **Gas management**: Merchant wallet pays for transaction gas
+- **Automatic execution**: Can be triggered on-demand or via automation
+
+Learn more: [Fund Sweeping Guide](docs/05-fund-sweeping.md)
 
 ## Testing the Sweep Functionality
 
@@ -155,7 +142,7 @@ To test the full flow including fund sweeping:
 2. **Send USDC to Merchant Wallet**: Transfer some USDC to the merchant address shown in the demo output
 3. **Re-run the Demo**: The sweep will automatically transfer the USDC to the treasury
 
-Alternatively, you can modify the demo to simulate a balance or use a wallet that already has USDC.
+Alternatively, you can use the CLI's "Sweep Funds" option after creating a merchant.
 
 ## Key Assumptions & Simplifications
 
@@ -187,23 +174,6 @@ This demo leverages patterns from:
   - [Policy Engine](https://docs.turnkey.com/concepts/policies/overview)
   - [Ethereum Policies](https://docs.turnkey.com/concepts/policies/examples/ethereum)
 
-## Project Structure
-
-```
-payflow-demo/
-├── src/
-│   ├── index.ts           # Main demo orchestration
-│   ├── createMerchant.ts  # Merchant sub-org & wallet creation
-│   ├── createPolicy.ts    # Policy creation for USDC restrictions
-│   ├── sweepUSDC.ts      # USDC transfer to treasury
-│   ├── treasury.ts        # Treasury wallet management
-│   ├── provider.ts        # Ethereum provider & Turnkey client setup
-│   └── utils.ts           # Utility functions
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
 ## Next Steps
 
 For production deployment, consider:
@@ -220,4 +190,3 @@ For production deployment, consider:
 For questions or issues:
 - Turnkey Documentation: [https://docs.turnkey.com](https://docs.turnkey.com)
 - Turnkey Support: [support@turnkey.com](mailto:support@turnkey.com)
-

@@ -12,6 +12,8 @@ import { runListMerchants } from "./commands/listMerchants";
 import { runAddMerchantWallet } from "./commands/addMerchantWallet";
 import { runDeleteMerchant } from "./commands/deleteMerchant";
 import { runSweepFunds } from "./commands/sweepFunds";
+import { runScheduledSweep } from "./commands/scheduledSweep";
+import { runSendFunds } from "./commands/sendFunds";
 import { runCheckBalance } from "./commands/checkBalance";
 import chalk from "chalk";
 
@@ -70,6 +72,14 @@ async function main() {
 
         case "sweep-funds":
           await runSweepFunds();
+          break;
+
+        case "scheduled-sweep":
+          await runScheduledSweep();
+          break;
+
+        case "send-funds":
+          await runSendFunds();
           break;
 
         case "check-balance":

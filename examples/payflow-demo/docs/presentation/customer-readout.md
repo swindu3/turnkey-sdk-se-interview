@@ -120,6 +120,12 @@ API_PRIVATE_KEY=your_key
 ORGANIZATION_ID=your_org_id
 ```
 
+**Setup Steps:**
+1. Install dependencies: `pnpm install -r`
+2. Build workspace packages: `pnpm run build-all` (required - builds @turnkey/sdk-server and dependencies)
+3. Configure environment variables in `.env.local`
+4. Run the demo: `pnpm demo` or `make run`
+
 ### Step 2: Treasury Wallet Setup
 
 The system creates or retrieves a central treasury wallet where all USDC will be consolidated.
