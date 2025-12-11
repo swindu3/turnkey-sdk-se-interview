@@ -11,6 +11,7 @@ export type MenuAction =
   | "scheduled-sweep"
   | "send-funds"
   | "check-balance"
+  | "view-policies"
   | "exit";
 
 const MENU_CHOICES = [
@@ -23,7 +24,8 @@ const MENU_CHOICES = [
   { title: "7. Scheduled Sweep Job", value: "scheduled-sweep" },
   { title: "8. Send Funds to Merchant", value: "send-funds" },
   { title: "9. Check Wallet Balance", value: "check-balance" },
-  { title: "10. Exit", value: "exit" },
+  { title: "10. View Policy Configs", value: "view-policies" },
+  { title: "11. Exit", value: "exit" },
 ];
 
 /**

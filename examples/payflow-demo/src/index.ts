@@ -15,6 +15,7 @@ import { runSweepFunds } from "./commands/sweepFunds";
 import { runScheduledSweep } from "./commands/scheduledSweep";
 import { runSendFunds } from "./commands/sendFunds";
 import { runCheckBalance } from "./commands/checkBalance";
+import { runViewPolicies } from "./commands/viewPolicies";
 import chalk from "chalk";
 
 async function main() {
@@ -84,6 +85,10 @@ async function main() {
 
         case "check-balance":
           await runCheckBalance();
+          break;
+
+        case "view-policies":
+          await runViewPolicies();
           break;
 
         default:

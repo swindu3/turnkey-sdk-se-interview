@@ -4,6 +4,7 @@ import { getOrCreateTreasury } from "../treasury";
 import { USDC_TOKEN_ADDRESSES, ERC20_ABI, USDC_DECIMALS, formatAddress, toReadableAmount, fromReadableAmount } from "../utils";
 import { listMerchants } from "../utils/merchants";
 import { createSpinner, success, error, warning, printHeader, printSeparator } from "../cli/display";
+import { checkWalletBalance, WalletBalances } from "../cli/balance";
 import { promptSubOrgIdWithSelection } from "../cli/menu";
 import prompts from "prompts";
 import chalk from "chalk";
@@ -113,15 +114,76 @@ export async function runSendFunds(): Promise<void> {
   const ethBalanceReadable = ethers.formatEther(treasuryEthBalance);
   const usdcBalanceReadable = toReadableAmount(treasuryUsdcBalance, USDC_DECIMALS);
 
+  // Fetch balances for all merchant wallets
+  const walletBalanceSpinner = createSpinner("Fetching wallet balances...");
+  walletBalanceSpinner.start();
+
+  const walletsWithBalances = await Promise.all(
+    selectedMerchant.wallets
+      .filter((wallet) => wallet.address !== "N/A")
+      .map(async (wallet) => {
+        try {
+          const balances = await checkWalletBalance(wallet.address, network, usdcTokenAddress);
+          return {
+            wallet,
+            balances,
+            balanceError: undefined as string | undefined,
+          };
+        } catch (error: any) {
+          // If balance check fails, continue without balance
+          return {
+            wallet,
+            balances: null,
+            balanceError: error.message,
+          };
+        }
+      })
+  );
+
+  walletBalanceSpinner.stop();
+
+  // Format balance display for menu (show 0 values explicitly)
+  const formatBalanceDisplay = (balances: WalletBalances | null, error?: string): string => {
+    if (error) {
+      return chalk.gray(" (balance unavailable)");
+    }
+    if (!balances) {
+      return chalk.gray(" (loading...)");
+    }
+    const ethValue = parseFloat(balances.eth);
+    const usdcValue = parseFloat(balances.usdc);
+    
+    // Always show values, including 0.00
+    const ethDisplay = ethValue.toFixed(4);
+    const usdcDisplay = usdcValue.toFixed(2);
+    
+    // Color code based on balance levels
+    const ethColor = ethValue === 0 ? chalk.gray : ethValue < 0.001 ? chalk.red : ethValue < 0.01 ? chalk.yellow : chalk.green;
+    const usdcColor = usdcValue === 0 ? chalk.gray : usdcValue < 0.1 ? chalk.red : usdcValue < 1 ? chalk.yellow : chalk.green;
+    
+    return chalk.gray(` | ETH: ${ethColor(ethDisplay)} | USDC: ${usdcColor(usdcDisplay)}`);
+  };
+
+  // Create mapping from original wallet index to filtered wallets with balances
+  const walletIndexMap: number[] = [];
+  selectedMerchant.wallets.forEach((wallet, idx) => {
+    if (wallet.address !== "N/A") {
+      walletIndexMap.push(idx);
+    }
+  });
+
   // Select wallet
   const { walletIndex } = await prompts({
     type: "select",
     name: "walletIndex",
     message: `Select a wallet to send funds to (Treasury: ${ethBalanceReadable} ETH, ${usdcBalanceReadable} USDC):`,
-    choices: selectedMerchant.wallets.map((wallet, idx) => ({
-      title: `${wallet.walletName} (${formatAddress(wallet.address)})`,
-      value: idx,
-    })),
+    choices: walletsWithBalances.map((walletData, idx) => {
+      const balanceDisplay = formatBalanceDisplay(walletData.balances, walletData.balanceError);
+      return {
+        title: `${walletData.wallet.walletName} (${formatAddress(walletData.wallet.address)})${balanceDisplay}`,
+        value: walletIndexMap[idx], // Use original index
+      };
+    }),
   });
 
   if (walletIndex === undefined) {
